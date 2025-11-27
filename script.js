@@ -4,7 +4,10 @@ const taskInput = document.getElementById("taskInput");
 const addBtn = document.getElementById("addBtn");
 const taskList = document.getElementById("taskList");
 
-addBtn.addEventListener("click", function () {
+// -------------------------
+// ADD TASK
+// -------------------------
+addBtn.addEventListener("click", async function () {
     const taskText = taskInput.value.trim();
 
     if (taskText === "") {
@@ -12,24 +15,39 @@ addBtn.addEventListener("click", function () {
         return;
     }
 
-    addTaskToUI(taskText);
-    saveTask(taskText);
-    taskInput.value = "";
+    // Send task to backend
+    const res = await fetch("http://localhost:5000/tasks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: taskText })
+    });
+
+    const newTask = await res.json();
+
+    addTaskToUI(newTask); // Add to UI
+    taskInput.value = ""; // Clear input
 });
 
-function addTaskToUI(taskText) {
+// -------------------------
+// ADD TASK TO UI
+// -------------------------
+function addTaskToUI(task) {
     const li = document.createElement("li");
 
     const textSpan = document.createElement("span");
-    textSpan.textContent = taskText;
+    textSpan.textContent = task.title;
 
     const deleteBtn = document.createElement("button");
     deleteBtn.textContent = "Delete";
     deleteBtn.classList.add("deleteBtn");
 
-    deleteBtn.addEventListener("click", function () {
-        li.remove();
-        deleteTaskFromStorage(taskText);
+    // Delete from backend + UI
+    deleteBtn.addEventListener("click", async function () {
+        await fetch(`http://localhost:5000/tasks/${task._id}`, {
+            method: "DELETE"
+        });
+
+        li.remove(); // remove from UI
     });
 
     li.appendChild(textSpan);
@@ -37,19 +55,13 @@ function addTaskToUI(taskText) {
     taskList.appendChild(li);
 }
 
-function saveTask(task) {
-    let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
-    tasks.push(task);
-    localStorage.setItem("tasks", JSON.stringify(tasks));
-}
+// -------------------------
+// LOAD ALL TASKS FROM BACKEND
+// -------------------------
+async function loadTasks() {
+    const res = await fetch("http://localhost:5000/tasks");
+    const tasks = await res.json();
 
-function loadTasks() {
-    let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
+    taskList.innerHTML = ""; // Clear UI
     tasks.forEach(task => addTaskToUI(task));
-}
-
-function deleteTaskFromStorage(taskText) {
-    let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
-    tasks = tasks.filter(t => t !== taskText);
-    localStorage.setItem("tasks", JSON.stringify(tasks));
 }
