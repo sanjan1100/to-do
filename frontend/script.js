@@ -16,7 +16,7 @@ addBtn.addEventListener("click", async function () {
     }
 
     // Send task to backend
-    const res = await fetch("http://localhost:5000/tasks", {
+    const res = await fetch("https://to-do-task-ssai.onrender.com/tasks", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title: taskText })
@@ -43,7 +43,7 @@ function addTaskToUI(task) {
 
     // Delete from backend + UI
     deleteBtn.addEventListener("click", async function () {
-        await fetch(`http://localhost:5000/tasks/${task._id}`, {
+        await fetch(`https://to-do-task-ssai.onrender.com/tasks/${task._id}`, {
             method: "DELETE"
         });
 
@@ -59,7 +59,7 @@ function addTaskToUI(task) {
 // LOAD ALL TASKS FROM BACKEND
 // -------------------------
 async function loadTasks() {
-    const res = await fetch("http://localhost:5000/tasks");
+    const res = await fetch("https://to-do-task-ssai.onrender.com/tasks");
     const tasks = await res.json();
 
     taskList.innerHTML = ""; // Clear UI
