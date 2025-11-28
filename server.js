@@ -1,41 +1,58 @@
-require('dotenv').config();
-const express = require('express');
-const mongoose = require('mongoose');
-const cors = require('cors');
-const Task = require('./models/Task');
-const app = express();
-const path = require("path");
+import express from "express";
+import mongoose from "mongoose";
+import dotenv from "dotenv";
+import cors from "cors";
 
+dotenv.config();
+
+const app = express();
+const PORT = process.env.PORT || 5000;
+
+// Middleware
 app.use(cors());
 app.use(express.json());
 
-// Serve frontend
-app.use(express.static(path.join(__dirname, "frontend")));
-
+// MongoDB connection
 mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log("DB Connected"))
-  .catch((err) => console.error(err));
+  .then(() => console.log("MongoDB connected"))
+  .catch(err => console.error("MongoDB connection error:", err));
 
-// API routes
-app.get('/tasks', async (req, res) => {
-  const tasks = await Task.find();
-  res.json(tasks);
+// Task schema
+const taskSchema = new mongoose.Schema({
+    title: { type: String, required: true },
+    completed: { type: Boolean, default: false },
 });
 
-app.post('/tasks', async (req, res) => {
-  const task = new Task({ title: req.body.title });
-  await task.save();
-  res.json(task);
+const Task = mongoose.model("Task", taskSchema);
+
+// Routes
+app.get("/tasks", async (req, res) => {
+    try {
+        const tasks = await Task.find();
+        res.json(tasks);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
 });
 
-app.delete('/tasks/:id', async (req, res) => {
-  await Task.findByIdAndDelete(req.params.id);
-  res.json({ message: "Deleted" });
+app.post("/tasks", async (req, res) => {
+    try {
+        const newTask = new Task({ title: req.body.title });
+        const savedTask = await newTask.save();
+        res.status(201).json(savedTask);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
 });
 
-// Catch-all – FIXED
-app.use((req, res) => {
-  res.sendFile(path.join(__dirname, "frontend", "index.html"));
+app.delete("/tasks/:id", async (req, res) => {
+    try {
+        const deletedTask = await Task.findByIdAndDelete(req.params.id);
+        if (!deletedTask) return res.status(404).json({ message: "Task not found" });
+        res.json({ message: "Task deleted" });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
 });
 
-app.listen(5000, () => console.log("Server running on port 5000"));
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
