@@ -1,49 +1,67 @@
-const API_URL = "https://to-do-task-js3c.onrender.com";
+window.addEventListener('DOMContentLoaded', loadTasks);
 
-// Load tasks when page opens
-async function loadTasks() {
-    const res = await fetch(`${API_URL}/tasks`);
-    const tasks = await res.json();
+const taskInput = document.getElementById("taskInput");
+const addBtn = document.getElementById("addBtn");
+const taskList = document.getElementById("taskList");
 
-    const list = document.getElementById("task-list");
-    list.innerHTML = "";
+// -------------------------
+// ADD TASK
+// -------------------------
+addBtn.addEventListener("click", async function () {
+    const taskText = taskInput.value.trim();
 
-    tasks.forEach(task => {
-        const li = document.createElement("li");
-        li.textContent = task.title;
+    if (taskText === "") {
+        alert("Please enter a task.");
+        return;
+    }
 
-        const deleteBtn = document.createElement("button");
-        deleteBtn.textContent = "Delete";
-        deleteBtn.onclick = () => deleteTask(task._id);
-
-        li.appendChild(deleteBtn);
-        list.appendChild(li);
-    });
-}
-
-// Add new task
-async function addTask() {
-    const title = document.getElementById("task-input").value.trim();
-    if (!title) return alert("Enter a task!");
-
-    await fetch(`${API_URL}/tasks`, {
+    // Send task to backend
+    const res = await fetch("http://localhost:5000/tasks", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title })
+        body: JSON.stringify({ title: taskText })
     });
 
-    document.getElementById("task-input").value = "";
-    loadTasks();
-}
+    const newTask = await res.json();
 
-// Delete task
-async function deleteTask(id) {
-    await fetch(`${API_URL}/tasks/${id}`, {
-        method: "DELETE"
+    addTaskToUI(newTask); // Add to UI
+    taskInput.value = ""; // Clear input
+});
+
+// -------------------------
+// ADD TASK TO UI
+// -------------------------
+function addTaskToUI(task) {
+    const li = document.createElement("li");
+
+    const textSpan = document.createElement("span");
+    textSpan.textContent = task.title;
+
+    const deleteBtn = document.createElement("button");
+    deleteBtn.textContent = "Delete";
+    deleteBtn.classList.add("deleteBtn");
+
+    // Delete from backend + UI
+    deleteBtn.addEventListener("click", async function () {
+        await fetch(`http://localhost:5000/tasks/${task._id}`, {
+            method: "DELETE"
+        });
+
+        li.remove(); // remove from UI
     });
 
-    loadTasks();
+    li.appendChild(textSpan);
+    li.appendChild(deleteBtn);
+    taskList.appendChild(li);
 }
 
-// Load tasks on page load
-window.onload = loadTasks;
+// -------------------------
+// LOAD ALL TASKS FROM BACKEND
+// -------------------------
+async function loadTasks() {
+    const res = await fetch("http://localhost:5000/tasks");
+    const tasks = await res.json();
+
+    taskList.innerHTML = ""; // Clear UI
+    tasks.forEach(task => addTaskToUI(task));
+}
